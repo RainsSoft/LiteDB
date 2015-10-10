@@ -28,17 +28,20 @@ namespace LiteDB
 
         /// <summary>
         /// Supports recovery mode if a fail during write pages to disk
+        /// 支持恢复模式，如果在写页到磁盘的失败
         /// </summary>
         public bool JournalEnabled { get; private set; }
 
         /// <summary>
         /// Jounal filename with full path
+        /// 日志文件名的完整路径
         /// </summary>
         internal string JournalFilename { get; private set; }
 
         /// <summary>
         /// Define, in connection string, the user database version. When you increse this value
         /// LiteDatabase will run OnUpdate method for each new version. If defined, must be >= 1. Default: 1
+        /// 定义，在连接字符串中，用户数据库版本。当你增加这个值litedatabase会为每一个新版本的更新方法。如果定义，必须是> = 1。默认：1
         /// </summary>
         public int UserVersion { get; private set; }
 
@@ -47,8 +50,9 @@ namespace LiteDB
             if (string.IsNullOrEmpty(connectionString)) throw new ArgumentNullException("connectionString");
 
             // If is only a name, get connectionString from App.config
-            if (Regex.IsMatch(connectionString, @"^[\w-]+$"))
-                connectionString = ConfigurationManager.ConnectionStrings[connectionString].ConnectionString;
+            //ToDo:remove with support unity3d
+            // if (Regex.IsMatch(connectionString, @"^[\w-]+$"))
+            //    connectionString = ConfigurationManager.ConnectionStrings[connectionString].ConnectionString;
 
             // Create a dictionary from string name=value collection
             var values = new Dictionary<string, string>();

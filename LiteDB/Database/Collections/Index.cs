@@ -65,7 +65,11 @@ namespace LiteDB
                 index.Options = options;
 
                 // read all objects (read from PK index)
-                foreach (var node in new QueryAll("_id", 1).Run(this))
+                //supprt to unity3d
+                QueryAll _QueryAll = new QueryAll("_id", 1);
+                IEnumerable<IndexNode> _QueryAll_Run = _QueryAll.Run<T>(this);
+                foreach (IndexNode node in _QueryAll_Run)
+                //foreach (IndexNode node in new QueryAll("_id", 1).Run(this))
                 {
                     var dataBlock = this.Database.Data.Read(node.DataBlock, true);
 
