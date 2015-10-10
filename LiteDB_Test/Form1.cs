@@ -23,8 +23,10 @@ namespace LiteDB_Test
             using (MemoryStream ms = new MemoryStream(buf)) {
                 //db.BeginTrans();
                 try {
+                    ms.Position = 0;
                     if (db.FileStorage.Exists("10005/1.txt")) db.FileStorage.Delete("10005/1.txt");
                     db.FileStorage.Upload("10005/1.txt", ms);
+                    ms.Position = 0;
                     if (db.FileStorage.Exists("10005/2.txt")) db.FileStorage.Delete("10005/2.txt");
                     db.FileStorage.Upload("10005/2.txt", ms);
                     if (db.FileStorage.Exists("10005/3.txt")) db.FileStorage.Delete("10005/3.txt");
@@ -43,9 +45,10 @@ namespace LiteDB_Test
                     }
                     // Get file stream
                     var stream = file.OpenRead();
+                    stream.Read(buf, 0, buf.Length);
                     MemoryStream ms2 = new MemoryStream();
                     // Write file stream in a external stream
-                    db.FileStorage.Download("10005/1.txt", ms2);
+                    db.FileStorage.Download("10005/2.txt", ms2);
                     byte[] buf2 = ms2.ToArray();
                     db.FileStorage.Delete("10005/1.txt");
                     //db.Commit();

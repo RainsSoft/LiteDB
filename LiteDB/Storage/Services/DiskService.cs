@@ -17,8 +17,7 @@ namespace LiteDB
         private BinaryReader _reader;
         private BinaryWriter _writer;
 
-        public DiskService(ConnectionString connectionString)
-        {
+        public DiskService(ConnectionString connectionString) {
             _connectionString = connectionString;
 
             // Open file as ReadOnly - if we need use Write, re-open in Write Mode
@@ -30,12 +29,9 @@ namespace LiteDB
         /// <summary>
         /// Create a empty database ready to be used using connectionString as parameters
         /// </summary>
-        public static void CreateNewDatafile(ConnectionString connectionString)
-        {
-            using (var stream = File.Create(connectionString.Filename))
-            {
-                using (var writer = new BinaryWriter(stream))
-                {
+        public static void CreateNewDatafile(ConnectionString connectionString) {
+            using (var stream = File.Create(connectionString.Filename)) {
+                using (var writer = new BinaryWriter(stream)) {
                     DiskService.WritePage(writer, new HeaderPage());
                 }
             }
@@ -45,19 +41,16 @@ namespace LiteDB
         /// Create a new Page instance and read data from disk
         /// </summary>
         public T ReadPage<T>(uint pageID)
-            where T : BasePage, new()
-        {
+            where T : BasePage, new() {
             // create page instance and read from disk (read page header + content page)
             var page = new T();
             var stream = _reader.BaseStream;
             var posStart = (long)pageID * (long)BasePage.PAGE_SIZE;
             var posEnd = posStart + BasePage.PAGE_SIZE;
 
-            TryExec(_connectionString.Timeout, () =>
-            {
+            TryExec(_connectionString.Timeout, () => {
                 // position cursor
-                if (stream.Position != posStart)
-                {
+                if (stream.Position != posStart) {
                     stream.Seek(posStart, SeekOrigin.Begin);
                 }
 
@@ -67,8 +60,7 @@ namespace LiteDB
                 // if T is base and PageType has a defined type, convert page
                 var isBase = page.GetType() == typeof(BasePage);
 
-                if (isBase)
-                {
+                if (isBase) {
                     if (page.PageType == PageType.Index) page = (T)(object)page.CopyTo<IndexPage>();
                     else if (page.PageType == PageType.Data) page = (T)(object)page.CopyTo<DataPage>();
                     else if (page.PageType == PageType.Extend) page = (T)(object)page.CopyTo<ExtendPage>();
@@ -76,8 +68,7 @@ namespace LiteDB
                 }
 
                 // read page content if page is not empty
-                if (page.PageType != PageType.Empty)
-                {
+                if (page.PageType != PageType.Empty) {
                     page.ReadContent(_reader);
                 }
 
@@ -92,23 +83,20 @@ namespace LiteDB
         /// <summary>
         /// Write a page from memory to disk 
         /// </summary>
-        public void WritePage(BasePage page)
-        {
+        public void WritePage(BasePage page) {
             DiskService.WritePage(GetWriter(), page);
         }
 
         /// <summary>
         /// Static method for write a page using a diferent writer - used when create empty datafile
         /// </summary>
-        public static void WritePage(BinaryWriter writer, BasePage page)
-        {
+        public static void WritePage(BinaryWriter writer, BasePage page) {
             var stream = writer.BaseStream;
             var posStart = (long)page.PageID * (long)BasePage.PAGE_SIZE;
             var posEnd = posStart + BasePage.PAGE_SIZE;
 
             // position cursor
-            if (stream.Position != posStart)
-            {
+            if (stream.Position != posStart) {
                 stream.Seek(posStart, SeekOrigin.Begin);
             }
 
@@ -116,8 +104,7 @@ namespace LiteDB
             page.WriteHeader(writer);
 
             // write content except for empty pages
-            if (page.PageType != PageType.Empty)
-            {
+            if (page.PageType != PageType.Empty) {
                 page.WriteContent(writer);
             }
 
@@ -131,13 +118,11 @@ namespace LiteDB
         /// <summary>
         /// Pre-allocate more disk space to fast write new pages on disk
         /// </summary>
-        public void AllocateDiskSpace(long length)
-        {
+        public void AllocateDiskSpace(long length) {
             var writer = this.GetWriter();
             var stream = writer.BaseStream as FileStream;
 
-            if (length > stream.Length)
-            {
+            if (length > stream.Length) {
                 stream.SetLength(length);
             }
         }
@@ -145,11 +130,9 @@ namespace LiteDB
         /// <summary>
         /// Get BinaryWriter
         /// </summary>
-        private BinaryWriter GetWriter()
-        {
+        private BinaryWriter GetWriter() {
             // If no writer - re-open file in Write Mode
-            if (_writer == null)
-            {
+            if (_writer == null) {
                 _reader.Close(); // Close reader
 
                 var stream = new FileStream(_connectionString.Filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, BasePage.PAGE_SIZE);
@@ -166,14 +149,17 @@ namespace LiteDB
         /// <summary>
         /// Lock the datafile when start a begin transaction
         /// </summary>
-        public void Lock()
-        {
+        public void Lock() {
             var stream = this.GetWriter().BaseStream as FileStream;
 
-            TryExec(_connectionString.Timeout, () =>
-            {
+            TryExec(_connectionString.Timeout, () => {
                 // try to lock - if is in use, a exception will be throwed
+#if !UNITY_WEBPLAYER
                 stream.Lock(LOCK_POSITION, 1);
+#else
+                //Todo: how to do lock
+                //in unity3d webplay this lib is not thread safe
+#endif
 
             });
         }
@@ -181,53 +167,51 @@ namespace LiteDB
         /// <summary>
         /// Unlock the datafile
         /// </summary>
-        public void UnLock()
-        {
+        public void UnLock() {
             var stream = this.GetWriter().BaseStream as FileStream;
-
+#if !UNITY_WEBPLAYER
             stream.Unlock(LOCK_POSITION, 1);
+#else
+            //ToDo: how to do unlock
+#endif
         }
 
-        public void Flush()
-        {
+        public void Flush() {
             this.GetWriter().BaseStream.Flush();
         }
 
         /// <summary>
         /// Lock all file during write operations - avoid reads during inconsistence data
         /// </summary>
-        public void ProtectWriteFile(Action action)
-        {
+        public void ProtectWriteFile(Action action) {
             var stream = this.GetWriter().BaseStream as FileStream;
             var fileLength = stream.Length;
-
+#if !UNITY_WEBPLAYER
             stream.Lock(LOCK_POSITION + 1, fileLength);
-
             action();
-
             stream.Unlock(LOCK_POSITION + 1, fileLength);
+#else
+            //ToDo: how to do lock
+            action();
+            //ToDo: how to do unlock
+#endif
         }
 
         /// <summary>
         /// Try execute a block of code until timeout when IO lock exception occurs OR access denind
         /// </summary>
-        public static void TryExec(TimeSpan timeout, Action action)
-        {
+        public static void TryExec(TimeSpan timeout, Action action) {
             var timer = DateTime.Now.Add(timeout);
 
-            while (DateTime.Now < timer)
-            {
-                try
-                {
+            while (DateTime.Now < timer) {
+                try {
                     action();
                     return;
                 }
-                catch (UnauthorizedAccessException)
-                {
+                catch (UnauthorizedAccessException) {
                     Thread.Sleep(250);
                 }
-                catch (IOException ex)
-                {
+                catch (IOException ex) {
                     ex.WaitIfLocked(250);
                 }
             }
@@ -237,12 +221,10 @@ namespace LiteDB
 
         #endregion
 
-        public void Dispose()
-        {
+        public void Dispose() {
             _reader.Close();
 
-            if (_writer != null)
-            {
+            if (_writer != null) {
                 _writer.Close();
             }
         }

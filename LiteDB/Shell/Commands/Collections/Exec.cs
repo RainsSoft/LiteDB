@@ -1,34 +1,35 @@
-﻿using Microsoft.CSharp;
-using System;
+﻿using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
-
+#if !UNITY_WEBPLAYER
+using Microsoft.CSharp;
+#else
+   //TODO:
+#endif
 namespace LiteDB.Shell.Commands
 {
+#if !UNITY_WEBPLAYER
+    //need to support unity3d
     internal class CollectionExec : BaseCollection, ILiteCommand
     {
-        public bool IsCommand(StringScanner s)
-        {
+        public bool IsCommand(StringScanner s) {
             return this.IsCollectionCommand(s, "exec");
         }
 
-        public BsonValue Execute(LiteDatabase db, StringScanner s)
-        {
+        public BsonValue Execute(LiteDatabase db, StringScanner s) {
             var col = this.ReadCollection(db, s);
             var query = s.Match("{") ? Query.All() : this.ReadQuery(s);
             var code = DynamicCode.GetCode(s);
 
             var docs = col.Find(query).ToArray();
 
-            try
-            {
+            try {
                 db.BeginTrans();
 
-                foreach (var doc in docs)
-                {
+                foreach (var doc in docs) {
                     code(doc["_id"], doc, col, db);
                 }
 
@@ -36,8 +37,7 @@ namespace LiteDB.Shell.Commands
 
                 return docs.Length;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 db.Rollback();
                 throw ex;
             }
@@ -58,8 +58,7 @@ public class Program {
         LiteDatabase db) { [code] }
 }";
 
-        public static Action<object, BsonDocument, LiteCollection<BsonDocument>, LiteDatabase> GetCode(StringScanner s)
-        {
+        public static Action<object, BsonDocument, LiteCollection<BsonDocument>, LiteDatabase> GetCode(StringScanner s) {
             var str = s.Scan(@"[\s\S]*");
             var code = CODE_TEMPLATE.Replace("[code]", str);
             var provider = new CSharpCodeProvider();
@@ -71,11 +70,9 @@ public class Program {
 
             var results = provider.CompileAssemblyFromSource(parameters, code);
 
-            if (results.Errors.HasErrors)
-            {
+            if (results.Errors.HasErrors) {
                 var err = new StringBuilder();
-                foreach (CompilerError error in results.Errors)
-                {
+                foreach (CompilerError error in results.Errors) {
                     err.AppendLine(String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText));
                 }
                 throw new InvalidOperationException(err.ToString().Trim());
@@ -85,10 +82,13 @@ public class Program {
             var program = assembly.GetType("Program");
             var method = program.GetMethod("DoWork");
 
-            return new Action<object, BsonDocument, LiteCollection<BsonDocument>, LiteDatabase>((id, doc, col, db) =>
-            {
+            return new Action<object, BsonDocument, LiteCollection<BsonDocument>, LiteDatabase>((id, doc, col, db) => {
                 method.Invoke(null, new object[] { id, doc, col, db });
             });
         }
     }
+#else
+
+
+#endif
 }
