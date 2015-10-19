@@ -31,7 +31,7 @@ namespace LiteDB
             var dataPage = _pager.GetFreePage<DataPage>(col.FreeDataPageID, extend ? DataBlock.DATA_BLOCK_FIXED_SIZE : data.Length + DataBlock.DATA_BLOCK_FIXED_SIZE);
 
             // create a new block with first empty index on DataPage
-            var block = new DataBlock { Position = new PageAddress(dataPage.PageID, dataPage.DataBlocks.NextIndex()), Page = dataPage };
+            var block = new DataBlock { Position = new PageAddress(dataPage.PageID, DictionaryExtensions.NextIndex<DataBlock>(dataPage.DataBlocks)), Page = dataPage };
 
             // if extend, store all bytes on extended page.
             if (extend)

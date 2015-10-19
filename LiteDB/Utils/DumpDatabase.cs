@@ -1,4 +1,5 @@
-﻿using System;
+﻿//#define NET_4_0
+using System;
 using System.Collections.Generic;
 using LiteDB;
 using System.Diagnostics;
@@ -23,9 +24,9 @@ namespace LiteDB
                 var p = ReadPage<BasePage>(db, i, mem);
 
                 sb.AppendFormat("{0} <{1},{2}> [{3}] {4}{5} | ",
-                    p.PageID.Dump(),
-                    p.PrevPageID.Dump(),
-                    p.NextPageID.Dump(),
+                    DumpExtensions.Dump(p.PageID),
+                    DumpExtensions.Dump(p.PrevPageID),
+                    DumpExtensions.Dump(p.NextPageID),
                     p.PageType.ToString().PadRight(6).Substring(0, 6),
                     p.FreeBytes.ToString("0000"),
                     p.IsDirty ? "d" : " ");
@@ -73,7 +74,7 @@ namespace LiteDB
                 var page = db.Pager.GetPage<IndexPage>(cur.PageID);
                 var node = page.Nodes[cur.Index];
 
-                sbs[0].Append((Limit(node.Key.ToString(), size)).PadBoth(1 + (2 * size)));
+                sbs[0].Append(DumpExtensions.PadBoth((Limit(node.Key.ToString(), size)), 1 + (2 * size)));
 
                 for (var i = 0; i < IndexNode.MAX_LEVEL_LENGTH; i++)
                 {
@@ -122,7 +123,7 @@ namespace LiteDB
     }
 
     #region Dump Extensions
-
+#if NET_4_0
     internal static class DumpExtensions
     {
         public static string Dump(this uint pageID)
@@ -215,6 +216,99 @@ namespace LiteDB
             return str.PadLeft(padLeft).PadRight(length);
         }
     }
+#else
+    internal static class DumpExtensions
+    {
+        public static string Dump( uint pageID)
+        {
+            return pageID == uint.MaxValue ? "----" : pageID.ToString("0000");
+        }
 
+        public static string Dump( ushort index)
+        {
+            return index == ushort.MaxValue ? "--" : index.ToString();
+        }
+
+        public static string Dump(this PageAddress address)
+        {
+            return Dump(address.PageID) + ":" + Dump(address.Index);
+        }
+
+        public static string Dump(this BsonValue value)
+        {
+            return value.ToString();
+        }
+
+        public static void Dump(this BasePage page, StringBuilder sb)
+        {
+            if (page is HeaderPage) Dump((HeaderPage)page, sb);
+            if (page is CollectionPage) Dump((CollectionPage)page, sb);
+            if (page is IndexPage) Dump((IndexPage)page, sb);
+            if (page is DataPage) Dump((DataPage)page, sb);
+            if (page is ExtendPage) Dump((ExtendPage)page, sb);
+        }
+
+        public static void Dump(this HeaderPage page, StringBuilder sb)
+        {
+            sb.AppendFormat("Change: {0}, Version: {1}, FreeEmptyPageID: {2}, LastPageID: {3}, ColID: {4}",
+                page.ChangeID,
+                page.UserVersion,
+               Dump( page.FreeEmptyPageID),
+                Dump(page.LastPageID),
+                Dump(page.FirstCollectionPageID));
+        }
+
+        public static void Dump(this IndexPage page, StringBuilder sb)
+        {
+            foreach (var node in page.Nodes.Values)
+            {
+                sb.AppendFormat("[{0}] Key: {1}, Data: {2} / ",
+                    node.Position.Index,
+                    node.Key.Dump(),
+                    node.DataBlock.Dump());
+            }
+        }
+
+        public static void Dump(this CollectionPage page, StringBuilder sb)
+        {
+            sb.AppendFormat("'{0}', Count: {1}, FreeDataPageID: {2}, Indexes = ",
+                page.CollectionName,
+                page.DocumentCount,
+               Dump( page.FreeDataPageID));
+
+            foreach (var i in page.GetIndexes(true))
+            {
+                sb.AppendFormat("[{0}] Field: '{1}', Head: {2}, FreeIndexPageID: {3} / ",
+                    i.Slot,
+                    i.Field,
+                    i.HeadNode.Dump(),
+                    Dump(i.FreeIndexPageID));
+            }
+        }
+
+        public static void Dump(this DataPage page, StringBuilder sb)
+        {
+            foreach (var block in page.DataBlocks.Values)
+            {
+                sb.AppendFormat("[{0}] BytesUsed: {1}{2} / ",
+                    block.Position.Index,
+                    block.Data.Length,
+                    block.ExtendPageID == uint.MaxValue ? "" : ", Ext: " + DumpExtensions.Dump(block.ExtendPageID));
+            }
+        }
+
+        public static void Dump(this ExtendPage page, StringBuilder sb)
+        {
+            sb.AppendFormat("BytesUsed: {0}", page.Data.Length);
+        }
+
+        public static string PadBoth( string str, int length)
+        {
+            int spaces = length - str.Length;
+            int padLeft = spaces / 2 + str.Length;
+            return str.PadLeft(padLeft).PadRight(length);
+        }
+    }
+#endif
     #endregion
 }

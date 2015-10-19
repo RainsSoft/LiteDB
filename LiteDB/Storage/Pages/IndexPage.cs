@@ -54,13 +54,13 @@ namespace LiteDB
                 node.Page = this;
                 node.Position = new PageAddress(this.PageID, index);
                 node.KeyLength = reader.ReadUInt16();
-                node.Key = reader.ReadBsonValue(node.KeyLength);
-                node.DataBlock = reader.ReadPageAddress();
+                node.Key = BinaryReaderExtensions.ReadBsonValue(reader, node.KeyLength);
+                node.DataBlock = BinaryReaderExtensions.ReadPageAddress(reader);
 
                 for (var j = 0; j < node.Prev.Length; j++)
                 {
-                    node.Prev[j] = reader.ReadPageAddress();
-                    node.Next[j] = reader.ReadPageAddress();
+                    node.Prev[j] = BinaryReaderExtensions.ReadPageAddress(reader);
+                    node.Next[j] = BinaryReaderExtensions.ReadPageAddress(reader);
                 }
 
                 this.Nodes.Add(node.Position.Index, node);
@@ -74,13 +74,13 @@ namespace LiteDB
                 writer.Write(node.Position.Index); // node Index on this page
                 writer.Write((byte)node.Prev.Length); // level length
                 writer.Write(node.KeyLength); // valueLength
-                writer.WriteBsonValue(node.Key, node.KeyLength); // value
-                writer.Write(node.DataBlock); // data block reference
+                BinaryWriterExtensions.WriteBsonValue(writer,node.Key, node.KeyLength); // value
+                BinaryWriterExtensions.Write(writer,node.DataBlock); // data block reference
 
                 for (var j = 0; j < node.Prev.Length; j++)
                 {
-                    writer.Write(node.Prev[j]);
-                    writer.Write(node.Next[j]);
+                    BinaryWriterExtensions.Write(writer,node.Prev[j]);
+                    BinaryWriterExtensions.Write(writer,node.Next[j]);
                 }
             }
         }

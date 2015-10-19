@@ -1,4 +1,4 @@
-﻿#define NET_4_0
+﻿//#define NET_4_0
 using System;
 using System.Collections.Generic;
 using System.IO;

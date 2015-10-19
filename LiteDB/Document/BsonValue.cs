@@ -491,7 +491,7 @@ namespace LiteDB
                 case BsonType.Document: return this.AsDocument.CompareTo(other);
                 case BsonType.Array: return this.AsArray.CompareTo(other);
 
-                case BsonType.Binary: return ((Byte[])this.RawValue).BinaryCompareTo((Byte[])other.RawValue);
+                case BsonType.Binary: return BinaryCompareTo((Byte[])this.RawValue,(Byte[])other.RawValue); //return ((Byte[])this.RawValue).BinaryCompareTo((Byte[])other.RawValue);
                 case BsonType.ObjectId: return ((ObjectId)this.RawValue).CompareTo((ObjectId)other.RawValue);
                 case BsonType.Guid: return ((Guid)this.RawValue).CompareTo((Guid)other.RawValue);
 
@@ -501,7 +501,21 @@ namespace LiteDB
                 default: throw new NotImplementedException();
             }
         }
+        public static int BinaryCompareTo( byte[] lh, byte[] rh) {
+            if (lh == null) return rh == null ? 0 : -1;
+            if (rh == null) return 1;
 
+            var result = 0;
+            var i = 0;
+            var stop = Math.Min(lh.Length, rh.Length);
+
+            for (; 0 == result && i < stop; i++)
+                result = lh[i].CompareTo(rh[i]);
+
+            if (result != 0) return result;
+            if (i == lh.Length) return i == rh.Length ? 0 : -1;
+            return 1;
+        }
         public bool Equals(BsonValue other)
         {
             return this.CompareTo(other) == 0;

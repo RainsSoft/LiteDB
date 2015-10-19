@@ -13,11 +13,16 @@ namespace LiteDB
     public class JsonSerializer
     {
         #region Serialize
-
+        public static string Serialize(BsonValue value) { 
+            return Serialize(value,false,true);;
+        }
+        public static string Serialize(BsonValue value, bool pretty ) {
+            return Serialize(value, pretty, true); ;
+        }
         /// <summary>
         /// Json serialize a BsonValue into a String
         /// </summary>
-        public static string Serialize(BsonValue value, bool pretty = false, bool writeBinary = true)
+        public static string Serialize(BsonValue value, bool pretty , bool writeBinary )
         {
             var sb = new StringBuilder();
 
@@ -28,11 +33,16 @@ namespace LiteDB
 
             return sb.ToString();
         }
-
+        public static void Serialize(BsonValue value, TextWriter writer) {
+            Serialize(value, writer, false, true);
+        }
+        public static void Serialize(BsonValue value, TextWriter writer, bool pretty) {
+            Serialize(value, writer, pretty, true);
+        }
         /// <summary>
         /// Json serialize a BsonValue into a TextWriter
         /// </summary>
-        public static void Serialize(BsonValue value, TextWriter writer, bool pretty = false, bool writeBinary = true)
+        public static void Serialize(BsonValue value, TextWriter writer, bool pretty , bool writeBinary )
         {
             var w = new JsonWriter(writer);
             w.Pretty = pretty;

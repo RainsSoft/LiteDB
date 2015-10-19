@@ -116,7 +116,7 @@ namespace LiteDB
             }
             catch (IOException ex)
             {
-                ex.WaitIfLocked(0);
+                IOExceptionExtensions.WaitIfLocked(ex, 0);
             }
         }
     }

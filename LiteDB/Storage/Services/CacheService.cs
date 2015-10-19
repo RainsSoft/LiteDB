@@ -52,7 +52,7 @@ namespace LiteDB
         public T GetPage<T>(uint pageID)
             where T : BasePage
         {
-            var page = _cache.GetOrDefault(pageID, null);
+            var page = DictionaryExtensions.GetOrDefault<uint,BasePage>(_cache, pageID, null);
 
             // if a need a specific page but has a BasePage, returns null
             if (page != null && page.GetType() == typeof(BasePage) && typeof(T) != typeof(BasePage))

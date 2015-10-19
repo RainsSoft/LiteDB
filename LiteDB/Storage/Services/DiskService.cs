@@ -212,7 +212,7 @@ namespace LiteDB
                     Thread.Sleep(250);
                 }
                 catch (IOException ex) {
-                    ex.WaitIfLocked(250);
+                    IOExceptionExtensions.WaitIfLocked(ex, 250);
                 }
             }
 

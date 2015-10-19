@@ -55,13 +55,16 @@ namespace LiteDB
                 writer.Write(block.ExtendPageID);
                 foreach (var idx in block.IndexRef)
                 {
-                    writer.Write(idx);
+                    Write(writer,idx);
                 }
                 writer.Write((ushort)block.Data.Length);
                 writer.Write(block.Data);
             }
         }
-
+        public static void Write(BinaryWriter writer, PageAddress address) {
+            writer.Write(address.PageID);
+            writer.Write(address.Index);
+        }
         public override void ReadContent(BinaryReader reader)
         {
             this.DataBlocks = new Dictionary<ushort, DataBlock>(ItemCount);
@@ -76,7 +79,7 @@ namespace LiteDB
 
                 for(var j = 0; j < CollectionIndex.INDEX_PER_COLLECTION; j++)
                 {
-                    block.IndexRef[j] = reader.ReadPageAddress();
+                    block.IndexRef[j] = ReadPageAddress(reader);
                 }
 
                 var size = reader.ReadUInt16();
@@ -84,6 +87,10 @@ namespace LiteDB
 
                 this.DataBlocks.Add(block.Position.Index, block);
             }            
+        }
+
+        public static PageAddress ReadPageAddress(BinaryReader reader) {
+            return new PageAddress(reader.ReadUInt32(), reader.ReadUInt16());
         }
     }
 }

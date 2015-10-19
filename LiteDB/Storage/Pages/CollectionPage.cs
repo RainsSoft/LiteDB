@@ -62,8 +62,8 @@ namespace LiteDB
             foreach (var index in this.Indexes)
             {
                 index.Field = reader.ReadString();
-                index.HeadNode = reader.ReadPageAddress();
-                index.TailNode = reader.ReadPageAddress();
+                index.HeadNode = ReadPageAddress(reader);
+                index.TailNode = ReadPageAddress(reader);
                 index.FreeIndexPageID = reader.ReadUInt32();
                 index.Options.Unique = reader.ReadBoolean();
                 index.Options.IgnoreCase = reader.ReadBoolean();
@@ -72,7 +72,9 @@ namespace LiteDB
                 index.Options.RemoveAccents = reader.ReadBoolean();
             }
         }
-
+        public static PageAddress ReadPageAddress(BinaryReader reader) {
+            return new PageAddress(reader.ReadUInt32(), reader.ReadUInt16());
+        }
         public override void WriteContent(BinaryWriter writer)
         {
             writer.Write(this.CollectionName);
@@ -82,8 +84,8 @@ namespace LiteDB
             foreach (var index in this.Indexes)
             {
                 writer.Write(index.Field);
-                writer.Write(index.HeadNode);
-                writer.Write(index.TailNode);
+                Write(writer,index.HeadNode);
+                Write(writer,index.TailNode);
                 writer.Write(index.FreeIndexPageID);
                 writer.Write(index.Options.Unique);
                 writer.Write(index.Options.IgnoreCase);
@@ -92,7 +94,10 @@ namespace LiteDB
                 writer.Write(index.Options.RemoveAccents);
             }
         }
-
+        public static void Write(BinaryWriter writer, PageAddress address) {
+            writer.Write(address.PageID);
+            writer.Write(address.Index);
+        }
         #region Methods to work with index array
 
         /// <summary>

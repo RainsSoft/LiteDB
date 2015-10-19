@@ -138,7 +138,8 @@ namespace LiteDB
 
             using (var file = new FileStream(filename, overwritten ? FileMode.Create : FileMode.CreateNew))
             {
-                this.OpenRead().CopyTo(file);
+                //this.OpenRead().CopyTo(file);
+                CopyTo(this.OpenRead(),file);
             }
         }
 
@@ -149,7 +150,16 @@ namespace LiteDB
         {
             using (var reader = this.OpenRead())
             {
-                reader.CopyTo(stream);
+                //reader.CopyTo(stream);
+                CopyTo(reader,stream);
+            }
+        }
+        public static void CopyTo( Stream input, Stream output) {
+            byte[] buffer = new byte[16 * 1024]; // Fairly arbitrary size
+            int bytesRead;
+
+            while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0) {
+                output.Write(buffer, 0, bytesRead);
             }
         }
     }

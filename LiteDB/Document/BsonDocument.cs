@@ -39,7 +39,7 @@ namespace LiteDB
         {
             get
             {
-                return this.RawValue.GetOrDefault(name, BsonValue.Null);
+                return DictionaryExtensions.GetOrDefault<string,BsonValue>(this.RawValue, name, BsonValue.Null);
             }
             set
             {

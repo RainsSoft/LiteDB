@@ -1,4 +1,5 @@
-﻿using System;
+﻿//#define NET_4_0
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,7 @@ namespace LiteDB
 {
     internal static class BinaryExtensions
     {
+#if NET_4_0
         // https://code.google.com/p/freshbooks-api/source/browse/depend/NClassify.Generator/content/ByteArray.cs?r=bbb6c13ec7a01eae082796550f1ddc05f61694b8
         public static int BinaryCompareTo(this byte[] lh, byte[] rh)
         {
@@ -25,5 +27,6 @@ namespace LiteDB
             if (i == lh.Length) return i == rh.Length ? 0 : -1;
             return 1;
         }
+#endif
     }
 }

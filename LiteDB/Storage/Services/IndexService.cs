@@ -100,7 +100,7 @@ namespace LiteDB
             // get a free page to insert my index node
             var page = _pager.GetFreePage<IndexPage>(index.FreeIndexPageID, node.Length);
 
-            node.Position = new PageAddress(page.PageID, page.Nodes.NextIndex());
+            node.Position = new PageAddress(page.PageID, DictionaryExtensions.NextIndex<IndexNode>(page.Nodes));
             node.Page = page;
 
             // add index node to page
