@@ -133,19 +133,20 @@ namespace LiteDB
         private BinaryWriter GetWriter() {
             // If no writer - re-open file in Write Mode
             if (_writer == null) {
-                _reader.Close(); // Close reader
-
+                _reader.Close(); // Close reader      
                 var stream = new FileStream(_connectionString.Filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, BasePage.PAGE_SIZE);
-
                 _reader = new BinaryReader(stream);
                 _writer = new BinaryWriter(stream);
-            }
 
+            }
             return _writer;
         }
 
         #region Lock/Unlock functions
-
+#if UNITY_WEBPLAYER
+        private static ReaderWriterLockSlim _readWriteLock = new ReaderWriterLockSlim();
+        private static ReaderWriterLockSlim _protectWriteLock = new ReaderWriterLockSlim();
+#endif
         /// <summary>
         /// Lock the datafile when start a begin transaction
         /// </summary>
@@ -154,11 +155,13 @@ namespace LiteDB
 
             TryExec(_connectionString.Timeout, () => {
                 // try to lock - if is in use, a exception will be throwed
-#if !UNITY_WEBPLAYER
-                stream.Lock(LOCK_POSITION, 1);
-#else
+#if UNITY_WEBPLAYER
                 //Todo: how to do lock
+                _readWriteLock.EnterWriteLock();
                 //in unity3d webplay this lib is not thread safe
+
+#else
+               stream.Lock(LOCK_POSITION, 1);
 #endif
 
             });
@@ -169,10 +172,11 @@ namespace LiteDB
         /// </summary>
         public void UnLock() {
             var stream = this.GetWriter().BaseStream as FileStream;
-#if !UNITY_WEBPLAYER
+#if UNITY_WEBPLAYER
+             //ToDo: how to do unlock
+            _readWriteLock.ExitWriteLock(); 
+#else          
             stream.Unlock(LOCK_POSITION, 1);
-#else
-            //ToDo: how to do unlock
 #endif
         }
 
@@ -186,14 +190,17 @@ namespace LiteDB
         public void ProtectWriteFile(Action action) {
             var stream = this.GetWriter().BaseStream as FileStream;
             var fileLength = stream.Length;
-#if !UNITY_WEBPLAYER
+#if UNITY_WEBPLAYER
+           //ToDo: how to do lock
+            _protectWriteLock.EnterWriteLock();
+            action();
+            _protectWriteLock.ExitWriteLock();
+            //ToDo: how to do unlock
+#else 
             stream.Lock(LOCK_POSITION + 1, fileLength);
             action();
             stream.Unlock(LOCK_POSITION + 1, fileLength);
-#else
-            //ToDo: how to do lock
-            action();
-            //ToDo: how to do unlock
+           
 #endif
         }
 
