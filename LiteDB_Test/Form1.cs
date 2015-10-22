@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -18,7 +19,13 @@ namespace LiteDB_Test
         }
 
         private void Form1_Load(object sender, EventArgs e) {
-            test1();
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            for (int i = 0; i < 10; i++) {
+                test1();
+            }
+            sw.Stop();
+            Console.WriteLine(sw.ElapsedMilliseconds);
         }
         
         private static void test1() {
@@ -36,9 +43,10 @@ namespace LiteDB_Test
                 }
                 catch (Exception ee) {
                     MessageBox.Show(ee.ToString());
-                }
+                }                
                 // Create your new customer instance
                 var customer = new Customer {
+                    Id=0,
                     Name = "John Doe",
                     Phones = new string[] { "8000-0000", "9000-0000" },
                     IsActive = true,
@@ -49,7 +57,7 @@ namespace LiteDB_Test
                 col.Insert(customer);
 
                 // Update a document inside a collection
-                customer.Name = "Joana Doe";
+                customer.Name = "Joana Doe_"+(cf/10).ToString();
 
                 col.Update(customer);
 
@@ -116,8 +124,8 @@ namespace LiteDB_Test
             public string[] Phones { get; set; }
             bool ma;
             public bool IsActive { set { ma = value; } }
-            
-            public float mF;
+
+            public float mF { get; set; }
         }
     }
 }
