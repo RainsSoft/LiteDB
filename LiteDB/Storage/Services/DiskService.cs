@@ -1,4 +1,5 @@
 ﻿using System;
+//using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace LiteDB
 
             // Open file as ReadOnly - if we need use Write, re-open in Write Mode
             var stream = new FileStream(_connectionString.Filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, BasePage.PAGE_SIZE);
-
+            
             _reader = new BinaryReader(stream);
         }
 
@@ -144,8 +145,32 @@ namespace LiteDB
 
         #region Lock/Unlock functions
 #if UNITY_WEBPLAYER
-        private static ReaderWriterLockSlim _readWriteLock = new ReaderWriterLockSlim();
-        private static ReaderWriterLockSlim _protectWriteLock = new ReaderWriterLockSlim();
+        //private static ReaderWriterLockSlim _readWriteLock = new ReaderWriterLockSlim();
+        //private static ReaderWriterLockSlim _protectWriteLock = new ReaderWriterLockSlim();
+        //private static readonly Hashtable _getterDict = Hashtable.Synchronized(new Hashtable(10240));
+        //private static readonly Hashtable _setterDict = Hashtable.Synchronized(new Hashtable(10240));
+        private static Dictionary<string, ReaderWriterLockSlim> _readWriteLocks = new Dictionary<string, ReaderWriterLockSlim>();
+        private static Dictionary<string, ReaderWriterLockSlim> _protectWriteLocks = new Dictionary<string, ReaderWriterLockSlim>();
+        private  ReaderWriterLockSlim _getReadWriteLocks() {
+            ReaderWriterLockSlim rwlock = null;
+            string dbFileName = this._connectionString.Filename;
+            _readWriteLocks.TryGetValue(dbFileName, out rwlock);
+            if (rwlock == null) {
+                rwlock = new ReaderWriterLockSlim();
+                _readWriteLocks.Add(dbFileName,rwlock);
+            }
+            return rwlock;
+        }
+        private  ReaderWriterLockSlim _getProtectWriteLocks() {
+            ReaderWriterLockSlim rwlock = null;
+            string dbFileName = this._connectionString.Filename;
+            _protectWriteLocks.TryGetValue(dbFileName, out rwlock);
+            if (rwlock == null) {
+                rwlock = new ReaderWriterLockSlim();
+                _protectWriteLocks.Add(dbFileName, rwlock);
+            }
+            return rwlock;
+        }
 #endif
         /// <summary>
         /// Lock the datafile when start a begin transaction
@@ -157,6 +182,7 @@ namespace LiteDB
                 // try to lock - if is in use, a exception will be throwed
 #if UNITY_WEBPLAYER
                 //Todo: how to do lock
+                ReaderWriterLockSlim _readWriteLock = _getReadWriteLocks();
                 _readWriteLock.EnterWriteLock();
                 //in unity3d webplay this lib is not thread safe
 
@@ -174,6 +200,7 @@ namespace LiteDB
             var stream = this.GetWriter().BaseStream as FileStream;
 #if UNITY_WEBPLAYER
              //ToDo: how to do unlock
+            ReaderWriterLockSlim _readWriteLock = _getReadWriteLocks();
             _readWriteLock.ExitWriteLock(); 
 #else          
             stream.Unlock(LOCK_POSITION, 1);
@@ -192,6 +219,7 @@ namespace LiteDB
             var fileLength = stream.Length;
 #if UNITY_WEBPLAYER
            //ToDo: how to do lock
+            ReaderWriterLockSlim _protectWriteLock = _getProtectWriteLocks();
             _protectWriteLock.EnterWriteLock();
             action();
             _protectWriteLock.ExitWriteLock();
