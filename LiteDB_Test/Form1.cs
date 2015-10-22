@@ -18,8 +18,56 @@ namespace LiteDB_Test
         }
 
         private void Form1_Load(object sender, EventArgs e) {
-            LiteDB.LiteDatabase db = new LiteDatabase("test.nosql");
-            byte[] buf = new byte[] { 1, 2, 3, 4,5,6,7,8,9,10 };
+            test1();
+        }
+        
+        private static void test1() {
+            // Open database (or create if not exits)
+            using (var db = new LiteDatabase(Application.StartupPath + "/MyData.db")) {
+                // Get customer collection
+                var col = db.GetCollection<Customer>("customers");
+                float cf = (float)col.Count();
+                //取第二页，降序
+                try {
+                    var data = col.FindBySplitePage<int>(n => n.Name.StartsWith("Jo"), n => (int)n.mF, true, 10, 1);
+                    foreach (var v in data) {
+                        Console.WriteLine("id:" + v.Id.ToString() + "_mf:" + v.mF.ToString());
+                    }
+                }
+                catch (Exception ee) {
+                    MessageBox.Show(ee.ToString());
+                }
+                // Create your new customer instance
+                var customer = new Customer {
+                    Name = "John Doe",
+                    Phones = new string[] { "8000-0000", "9000-0000" },
+                    IsActive = true,
+                    mF=cf
+                };
+
+                // Insert new customer document (Id will be auto-incremented)
+                col.Insert(customer);
+
+                // Update a document inside a collection
+                customer.Name = "Joana Doe";
+
+                col.Update(customer);
+
+                // Index document using a document property
+                col.EnsureIndex(x => x.Name);
+
+                // Use Linq to query documents
+                var results = col.Find(x => x.Name.StartsWith("Jo"));
+                foreach (var v in results) {
+                    //Debug.Log(v.Name);
+                    Console.WriteLine("name:"+v.Name+"_mf:"+v.mF.ToString());
+                }
+            }
+        }
+
+        void test2() {
+            LiteDB.LiteDatabase db = new LiteDatabase(Application.StartupPath + "/test.nosql");
+            byte[] buf = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
             using (MemoryStream ms = new MemoryStream(buf)) {
                 //db.BeginTrans();
                 try {
@@ -33,15 +81,16 @@ namespace LiteDB_Test
                     db.FileStorage.Upload("10005/3.txt", ms);
                     if (db.FileStorage.Exists("10005/4.txt")) db.FileStorage.Delete("10005/4.txt");
                     db.FileStorage.Upload("10005/4.txt", ms);
-                   
+
                     // Get file reference using file id
                     var file = db.FileStorage.FindById("10005/1.txt");
 
                     // Find all files using StartsWith
                     IEnumerable<LiteFileInfo> files = db.FileStorage.Find("10005/"); //db.Files.Find("my_");
-                   
+
                     foreach (var vf in files) {
-                        Console.WriteLine(vf.Id+"     "+vf.Filename);
+                        Console.WriteLine(vf.Id + "     " + vf.Filename);
+                        //Debug.Log(vf.Id + "     " + vf.Filename);
                     }
                     // Get file stream
                     var stream = file.OpenRead();
@@ -54,10 +103,21 @@ namespace LiteDB_Test
                     //db.Commit();
                 }
                 catch {
-                   // db.Rollback();
+                    // db.Rollback();
                 }
 
             }
+        }
+        // Create your POCO class
+        public class Customer
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public string[] Phones { get; set; }
+            bool ma;
+            public bool IsActive { set { ma = value; } }
+            
+            public float mF;
         }
     }
 }

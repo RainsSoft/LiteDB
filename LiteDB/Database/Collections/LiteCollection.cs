@@ -6,6 +6,10 @@ using System.Text;
 
 namespace LiteDB
 {
+    /// <summary>
+    /// 只支持序列化 T:new()类的公共可读写属性，字段以及非public属性或者只读属性或者只写属性都是不序列化的
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public partial class LiteCollection<T>
         where T : new()
     {

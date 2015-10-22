@@ -78,7 +78,9 @@ namespace LiteDB
         #region Collections
 
         /// <summary>
+        /// 只支持序列化 T:new()类的公共可读写属性，字段以及非public属性或者只读属性或者只写属性都是不序列化的
         /// Get a collection using a entity class as strong typed document. If collection does not exits, create a new one.
+        /// LiteCollection [T]
         /// </summary>
         /// <param name="name">Collection name (case insensitive)</param>
         public LiteCollection<T> GetCollection<T>(string name)

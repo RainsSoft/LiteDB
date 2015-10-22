@@ -225,5 +225,40 @@ namespace LiteDB
         }
 
         #endregion
+		
+		#region 添加分页查询
+        /*
+         var col = db.GetCollection<Customer>("customers");
+        //取第二页，降序
+        var data = col.FindBySplitePage<Int32>(n => n.Name.StartsWith("Jim1"), n => n.Age, true, 3, 2).ToList();
+         */
+        /// <summary>分页获取记录</summary>
+        /// <typeparam name="TOder">排序字段类型</typeparam>
+        /// <param name="predicate">linq查询表达式</param>
+        /// <param name="orderSelector">排序表达式</param>
+        /// <param name="isDescending">是否降序,true降序</param>
+        /// <param name="pageSize">每页大小</param>
+        /// <param name="pageIndex">要获取的页码，从1开始</param>
+        /// <returns>分页后的数据</returns>
+        public IEnumerable<T> FindBySplitePage<TOder>(Expression<Func<T, bool>> predicate,
+            Func<T, TOder> orderSelector, Boolean isDescending, int pageSize, int pageIndex) {
+            var allCount = Count(predicate);//计算总数
+            if (allCount == 0) return new T[0] ;
+            var pages = (int)Math.Ceiling((double)allCount / (double)pageSize);//计算页码
+            if (pageIndex > pages) throw new Exception("页面数超过预期");
+            if (isDescending) {//降序
+                return Find(predicate)
+                              .OrderByDescending(orderSelector)
+                              .Skip((pageIndex - 1) * pageSize)
+                              .Take(pageSize);
+            }
+            else {//升序
+                return Find(predicate)
+                             .OrderBy(orderSelector)
+                             .Skip((pageIndex - 1) * pageSize)
+                             .Take(pageSize);
+            }
+        }
+        #endregion
     }
 }
