@@ -63,13 +63,17 @@ namespace LiteDB_Test
 
                 // Index document using a document property
                 col.EnsureIndex(x => x.Name);
-
+                //other io test
+                customer.Name = "Job test"+cf.ToString();
+                LiteDB_Test.LiteDBHelper.Update<Customer>(db, "customers", customer);
                 // Use Linq to query documents
                 var results = col.Find(x => x.Name.StartsWith("Jo"));
                 foreach (var v in results) {
                     //Debug.Log(v.Name);
                     Console.WriteLine("name:"+v.Name+"_mf:"+v.mF.ToString());
                 }
+              
+
             }
         }
 
