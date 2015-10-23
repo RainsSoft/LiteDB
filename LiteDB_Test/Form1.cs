@@ -46,6 +46,7 @@ namespace LiteDB_Test
                 }                
                 // Create your new customer instance
                 var customer = new Customer {
+                    //ID是对象默认属性，新增加时候必须设置0
                     Id=0,
                     Name = "John Doe",
                     Phones = new string[] { "8000-0000", "9000-0000" },
@@ -66,6 +67,11 @@ namespace LiteDB_Test
                 //other io test
                 customer.Name = "Job test"+cf.ToString();
                 LiteDB_Test.LiteDBHelper.Update<Customer>(db, "customers", customer);
+                Customer c2 = customer.clone();
+                c2.Id = 0;
+                c2.Name = "Joana Clone";
+                customer.Id = 0;
+                LiteDB_Test.LiteDBHelper.Save<Customer>(db, "customers", customer);
                 // Use Linq to query documents
                 var results = col.Find(x => x.Name.StartsWith("Jo"));
                 foreach (var v in results) {
@@ -130,6 +136,10 @@ namespace LiteDB_Test
             public bool IsActive { set { ma = value; } }
 
             public float mF { get; set; }
+            public Customer clone() {
+                Customer c = (Customer)base.MemberwiseClone();
+                return c;
+            }
         }
     }
 }
