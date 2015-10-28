@@ -52,6 +52,8 @@
     <Compile Include="Database\Tools\UserVersion.cs" />
     <Compile Include="Database\Tools\GetDatabaseInfo.cs" />
     <Compile Include="Document\ObjectId.cs" />
+    <Compile Include="LiteDBHelper.cs" />
+    <Compile Include="LiteDEncryption.cs" />
     <Compile Include="Query\Impl\QueryContains.cs" />
     <Compile Include="Query\Impl\QueryGreater.cs" />
     <Compile Include="Query\Impl\QueryOr.cs" />
