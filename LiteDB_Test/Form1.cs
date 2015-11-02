@@ -19,7 +19,12 @@ namespace LiteDB_Test
         }
 
         private void Form1_Load(object sender, EventArgs e) {
-            test2();
+            //test1();
+            //return;
+            //test2();
+            //return;
+            test3();
+            return;
             Stopwatch sw = new Stopwatch();
             sw.Start();
             for (int i = 0; i < 10; i++) {
@@ -28,10 +33,78 @@ namespace LiteDB_Test
             sw.Stop();
             Console.WriteLine(sw.ElapsedMilliseconds);
         }
-
+        void test3() {
+            string packPath = Application.StartupPath + "/irqpack.nosql";
+            IRobotQ.Packer.IRQ_Packer packer = IRobotQ.Packer.IRQ_Packer.OpenPacker(packPath, "irobotq", true);
+            IRobotQ.Packer.IRQ_FileTable sceneRoot = packer.AddFileTable("Scene") as IRobotQ.Packer.IRQ_FileTable;
+            packer.AddFileTable("Robot");
+            packer.AddFileTable("VPL");
+            sceneRoot.AddFile("a.bytes", new byte[] { 1, 2, 3, 4 }, System.DateTime.Now);
+            sceneRoot.AddFile("test/1.mi", new byte[] { 1, 2, 3, 4 }, System.DateTime.Now);
+            sceneRoot.AddFile("test/2.mi", new byte[] { 1, 2, 3, 4, 5, 6}, System.DateTime.Now);
+            sceneRoot.AddFile("test/del/3.mi", new byte[] { 1, 2, 3, 4, 5, 6,7,8 }, System.DateTime.Now);
+            sceneRoot.DelFile("test/del/3.mi");
+            sceneRoot.UpdateFile("test/1.mi", new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16 }, System.DateTime.Now);
+            sceneRoot.RenameFile("test/2.mi","test/4.mi");
+            sceneRoot.RenameDir("test", "test2");
+            List<string> tables;
+            packer.GetFileTableList(out tables);
+            foreach (var v in tables) {
+                Debug.WriteLine(v);
+            }
+            List<string> dirs;
+            sceneRoot.GetDirs(out dirs);
+            foreach (var v in dirs) {
+                Debug.WriteLine(v);
+            }
+            List<string> files;
+            int TotalSize = 0;
+            sceneRoot.GetFiles("test2", out files, out TotalSize);
+            packer.RenameFileTable("Scene", "Mission");
+            packer.GetFileTableList(out tables);
+            foreach (var v in tables) {
+                Debug.WriteLine(v);
+            }
+        }
         private static void test1() {
             // Open database (or create if not exits)
             using (var db = new LiteDatabase(Application.StartupPath + "/MyData.db")) {
+                iii_FileTableInfo ft = new iii_FileTableInfo();
+                ft.FileTableName = "testdir";
+                ft.FileCount = 0;
+                ft.FileList = new List<iii_FileTableFileInfo>();
+                LiteCollection<iii_FileTableInfo> lf = db.GetCollection<iii_FileTableInfo>("IRQ_FileTableInfos");
+                IEnumerable<iii_FileTableInfo>tables= lf.Find(n=>n.FileTableName.Equals(ft.FileTableName),0,1);
+                bool has = false;
+                int c=0;
+                foreach (var v in tables) {
+                    has = true;
+                    c++;
+                    ft = v;
+                }
+                if (!has) {
+                    lf.Insert(ft);
+                }
+                else {
+                    ft.FileCount = c;
+                    iii_FileTableFileInfo info = new iii_FileTableFileInfo();
+                    info.FileDir = "testdir" + c.ToString();
+                    info.FileLen = c;
+                    info.FileName = "file:" + c.ToString();
+                    info.FileUpdateTime = DateTime.Now.ToFileTimeUtc();
+                    info.buf = new byte[1024 * 1024 * 2];
+                    for (int i = 0; i < info.buf.Length; i++) {
+                        info.buf[i] = (byte)(i % 255);
+                    }
+                    ft.FileList.Add(info);
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+                    lf.Update(ft);
+                    sw.Stop();
+                    Console.WriteLine(sw.ElapsedMilliseconds.ToString());
+                }
+                return;
+
                 // Get customer collection
                 var col = db.GetCollection<Customer>("customers");
                 float cf = (float)col.Count();
@@ -102,8 +175,9 @@ namespace LiteDB_Test
                     ms.Position = 0;
                     LiteXorEncoderStream xe = new LiteXorEncoderStream(ms);
                     xe.Initialize(null);
-                    if (db.FileStorage.Exists("10005/1.txt")) db.FileStorage.Delete("10005/1.txt");
-                    db.FileStorage.Upload("10005/1.txt", xe);
+                    string filename = "$temp$/1.txt";
+                    if (db.FileStorage.Exists(filename)) db.FileStorage.Delete(filename);
+                    db.FileStorage.Upload(filename, xe);
                     //2
                     //ms.Position = 0;
                     if (db.FileStorage.Exists("10005/2.txt")) db.FileStorage.Delete("10005/2.txt");
@@ -165,6 +239,50 @@ namespace LiteDB_Test
                 Customer c = (Customer)base.MemberwiseClone();
                 return c;
             }
+        }
+        /// <summary>
+        /// 表文件信息
+        /// </summary>
+        public class iii_FileTableInfo
+        {
+            public int Id { get; set; }
+            /// <summary>
+            /// 数据表（目录名）
+            /// </summary>
+            public string FileTableName { get; set; }
+            /// <summary>
+            /// 文件个数
+            /// </summary>
+            public int FileCount { get; set; }
+            /// <summary>
+            /// 文件列表
+            /// </summary>
+            public List<iii_FileTableFileInfo> FileList { get; set; }
+
+        }
+        /// <summary>
+        /// IRQ_FileTable 内文件信息
+        /// </summary>
+        public class iii_FileTableFileInfo
+        {
+            public int Id { get; set; }
+            /// <summary>
+            /// 目录名
+            /// </summary>
+            public string FileDir { get; set; }
+            /// <summary>
+            /// 文件名
+            /// </summary>
+            public string FileName { get; set; }
+            /// <summary>
+            /// 文件长度
+            /// </summary>
+            public int FileLen { get; set; }
+            /// <summary>
+            /// 文件修改时间
+            /// </summary>
+            public long FileUpdateTime { get; set; }
+            public byte[] buf { get; set; }
         }
     }
 }

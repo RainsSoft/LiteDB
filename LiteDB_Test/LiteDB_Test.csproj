@@ -41,6 +41,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Class1.cs" />
+    <Compile Include="IRQ_Packer.cs" />
+    <Compile Include="IFilePacker.cs" />
     <Compile Include="LiteDBHelper.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>

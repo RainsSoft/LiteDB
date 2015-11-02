@@ -26,7 +26,8 @@ namespace LiteDB
 
             if (file.Length == 0)
             {
-                throw LiteException.FileCorrupted(file);
+                
+                //throw LiteException.FileCorrupted(file);
             }
 
             _positionInChunk = 0;

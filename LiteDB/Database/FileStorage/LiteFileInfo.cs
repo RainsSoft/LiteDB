@@ -41,7 +41,10 @@ namespace LiteDB
 
         public LiteFileInfo(string id, string filename)
         {
-            if (!IdPattern.IsMatch(id)) throw LiteException.InvalidFormat("FileId", id);
+            // ` ~ # ^ & * ( ) ' ? / \
+            //可以开头的字符 ! @ $ % -
+            if (!IdPattern.IsMatch(id)) 
+                throw LiteException.InvalidFormat("FileId", id);
 
             this.Id = id;
             this.Filename = Path.GetFileName(filename);

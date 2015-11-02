@@ -202,11 +202,15 @@ namespace LiteDB
         }
 
         #endregion
-
-        public void Dispose()
-        {
-            this.Disk.Dispose();
-            this.Cache.Dispose();
+        private bool _disposed;
+        public bool IsDisposed { get { return _disposed; } }
+        public void Dispose() {
+            if (!_disposed) {
+                this.Disk.Dispose();
+                this.Cache.Dispose();
+            }
+            _disposed = true;
         }
+       
     }
 }
