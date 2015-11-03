@@ -35,6 +35,9 @@ namespace LiteDB_Test
         }
         void test3() {
             string packPath = Application.StartupPath + "/irqpack.nosql";
+            if (File.Exists(packPath)) {
+                File.Delete(packPath);
+            }
             IRobotQ.Packer.IRQ_Packer packer = IRobotQ.Packer.IRQ_Packer.OpenPacker(packPath, "irobotq", true);
             IRobotQ.Packer.IRQ_FileTable sceneRoot = packer.AddFileTable("Scene") as IRobotQ.Packer.IRQ_FileTable;
             packer.AddFileTable("Robot");

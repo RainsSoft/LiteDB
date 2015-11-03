@@ -8,6 +8,7 @@ using System.Diagnostics;
 //using System.Data.SQLite;
 //using SQLite;
 using LiteDB;
+
 //using SharpCompress;
 
 namespace IRobotQ.Packer
@@ -90,6 +91,97 @@ namespace IRobotQ.Packer
         ///// </summary>
         //public string Tag { get; set; }
     }
+
+    internal class IRQ_FileTableFile_Compress
+    {
+        public static void CopyTo( Stream input, Stream output) {
+            byte[] buffer = new byte[16 * 1024]; // Fairly arbitrary size
+            int bytesRead;
+            //long posold = output.Position;
+            while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0) {
+                output.Write(buffer, 0, bytesRead);
+            }
+            //output.Position = posold;
+        }
+        public static void DeflateCompress<T>(Stream undefZipData,ref Stream defzipStream) where T :Stream{
+            //zipStream = new T();
+            long posold = defzipStream.Position;
+            using (System.IO.Compression.DeflateStream compressionStream =
+                new System.IO.Compression.DeflateStream(defzipStream, System.IO.Compression.CompressionMode.Compress)) {
+                CopyTo(undefZipData,compressionStream);
+                defzipStream.Position = posold;
+            }            
+        }
+        public static void DeflateUnCompress<T>(Stream defZipData, ref Stream defunZipStream) where T : Stream {
+            //zipStream = new T();
+            long posold = defunZipStream.Position;
+            using (System.IO.Compression.DeflateStream compressionStream =
+                new System.IO.Compression.DeflateStream(defZipData, System.IO.Compression.CompressionMode.Decompress)) {
+                    CopyTo(compressionStream, defunZipStream);
+                    defunZipStream.Position = posold;
+            }
+        }
+        public static byte[] GZipCompress(byte[] unGZipData) {
+            using (MemoryStream stream = new MemoryStream()) {
+                using (System.IO.Compression.GZipStream gZipStream =
+                    new System.IO.Compression.GZipStream(stream, System.IO.Compression.CompressionMode.Compress)) {
+                    gZipStream.Write(unGZipData, 0, unGZipData.Length);
+                    gZipStream.Close();
+                }
+                stream.Position = 0L;
+                return stream.ToArray();
+            }
+        }
+        public static  byte[] GZipDeCompress(byte[] defZipData) {
+            byte[] decompressedData = null;
+            MemoryStream ms_decompress = new MemoryStream();
+            using (MemoryStream ms = new MemoryStream(defZipData)) {
+                using (System.IO.Compression.GZipStream deCompressstream =
+                    new System.IO.Compression.GZipStream(ms, System.IO.Compression.CompressionMode.Decompress)) {
+                    byte[] buf = new byte[1024 * 16];
+                    int c = 0;
+                    while ((c = deCompressstream.Read(buf, 0, buf.Length)) > 0) {
+                        ms_decompress.Write(buf, 0, c);
+                    }
+                }
+                ms_decompress.Position = 0L;
+                decompressedData = ms_decompress.ToArray();
+            }
+            ms_decompress.Dispose();
+            return decompressedData;
+        }
+        public static byte[] DeflateDeCompress(byte[] defZipData) {
+            byte[] decompressedData = null;
+            MemoryStream ms_decompress = new MemoryStream();
+            using (MemoryStream ms = new MemoryStream(defZipData)) {
+                using (System.IO.Compression.DeflateStream deCompressstream =
+                    new System.IO.Compression.DeflateStream(ms, System.IO.Compression.CompressionMode.Decompress)) {
+                    byte[] buf = new byte[1024 * 16];
+                    int c = 0;
+                    while ((c = deCompressstream.Read(buf, 0, buf.Length)) > 0) {
+                        ms_decompress.Write(buf, 0, c);
+                    }
+                }
+                ms_decompress.Position = 0L;
+                decompressedData = ms_decompress.ToArray();
+            }
+            ms_decompress.Dispose();
+            return decompressedData;
+        }
+        public static byte[] DeflateCompress(byte[] undefZipData) {
+            byte[] compressedData = null;
+            using (MemoryStream ms = new MemoryStream()) {
+                using (System.IO.Compression.DeflateStream stream =
+                    new System.IO.Compression.DeflateStream(ms, System.IO.Compression.CompressionMode.Compress, true)) {
+                    stream.Write(undefZipData, 0, undefZipData.Length);
+                }
+                ms.Position = 0L;
+                compressedData = ms.ToArray();
+            }
+            return compressedData;
+        }
+    }
+
     public class IRQ_Packer : IFilePacker
     {
 
@@ -107,7 +199,7 @@ namespace IRobotQ.Packer
         internal static string _getFileLegalLowerDir(string path) {
             string pp = path.Replace("\\", "/");
             pp = pp.Replace("//", "/");
-            pp = pp.EndsWith("/") ? pp.Remove(pp.Length-1) : pp ;
+            pp = pp.EndsWith("/") ? pp.Remove(pp.Length - 1) : pp;
             return pp.ToLower();
         }
         /// <summary>
@@ -837,7 +929,7 @@ namespace IRobotQ.Packer
             try {
                 strDir = IRQ_Packer._getFileLegalLowerDir(strDir);
                 IRQ_FileTableFileInfo fileinfo = new IRQ_FileTableFileInfo();
-                fileinfo._GuidData = IRQ_Packer._filetable_DBPrefix+"_" + Guid.NewGuid().ToString("N");
+                fileinfo._GuidData = IRQ_Packer._filetable_DBPrefix + "_" + Guid.NewGuid().ToString("N");
                 fileinfo.FileDir = strDir;
                 fileinfo.FileLen = fileData.Length;
                 fileinfo.FileName = strFile;
@@ -916,7 +1008,7 @@ namespace IRobotQ.Packer
                 }
                 if (finfo == null) {
                     finfo = new IRQ_FileTableFileInfo();
-                    finfo._GuidData = IRQ_Packer._filetable_DBPrefix +"_"+ Guid.NewGuid().ToString("N");
+                    finfo._GuidData = IRQ_Packer._filetable_DBPrefix + "_" + Guid.NewGuid().ToString("N");
                     finfo.FileDir = strDir;
                     finfo.FileName = strFile;
                     finfo.FileLen = fileData.Length;
