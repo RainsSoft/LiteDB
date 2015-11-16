@@ -94,7 +94,7 @@ namespace IRobotQ.Packer
 
     internal class IRQ_FileTableFile_Compress
     {
-        public static void CopyTo( Stream input, Stream output) {
+        public static void CopyTo(Stream input, Stream output) {
             byte[] buffer = new byte[16 * 1024]; // Fairly arbitrary size
             int bytesRead;
             //long posold = output.Position;
@@ -103,22 +103,22 @@ namespace IRobotQ.Packer
             }
             //output.Position = posold;
         }
-        public static void DeflateCompress<T>(Stream undefZipData,ref Stream defzipStream) where T :Stream{
+        public static void DeflateCompress<T>(Stream undefZipData, ref Stream defzipStream) where T : Stream {
             //zipStream = new T();
             long posold = defzipStream.Position;
             using (System.IO.Compression.DeflateStream compressionStream =
                 new System.IO.Compression.DeflateStream(defzipStream, System.IO.Compression.CompressionMode.Compress)) {
-                CopyTo(undefZipData,compressionStream);
+                CopyTo(undefZipData, compressionStream);
                 defzipStream.Position = posold;
-            }            
+            }
         }
         public static void DeflateUnCompress<T>(Stream defZipData, ref Stream defunZipStream) where T : Stream {
             //zipStream = new T();
             long posold = defunZipStream.Position;
             using (System.IO.Compression.DeflateStream compressionStream =
                 new System.IO.Compression.DeflateStream(defZipData, System.IO.Compression.CompressionMode.Decompress)) {
-                    CopyTo(compressionStream, defunZipStream);
-                    defunZipStream.Position = posold;
+                CopyTo(compressionStream, defunZipStream);
+                defunZipStream.Position = posold;
             }
         }
         public static byte[] GZipCompress(byte[] unGZipData) {
@@ -132,7 +132,7 @@ namespace IRobotQ.Packer
                 return stream.ToArray();
             }
         }
-        public static  byte[] GZipDeCompress(byte[] defZipData) {
+        public static byte[] GZipDeCompress(byte[] defZipData) {
             byte[] decompressedData = null;
             MemoryStream ms_decompress = new MemoryStream();
             using (MemoryStream ms = new MemoryStream(defZipData)) {
